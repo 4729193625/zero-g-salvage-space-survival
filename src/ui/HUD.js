@@ -38,6 +38,14 @@ export class HUD {
       </div>
 
       <div id="crosshair">+</div>
+
+      <div id="throw-charge-ui">
+        <div id="throw-charge-label">THROW POWER</div>
+        <div id="throw-charge-track">
+          <div id="throw-charge-fill"></div>
+        </div>
+      </div>
+
       <div id="warning"></div>
       <div id="pickup-feedback"></div>
 
@@ -80,6 +88,8 @@ export class HUD {
       nearest: document.querySelector('#nearest'),
       velocity: document.querySelector('#velocity'),
       held: document.querySelector('#held'),
+      throwChargeUI: document.querySelector('#throw-charge-ui'),
+      throwChargeFill: document.querySelector('#throw-charge-fill'),
       warning: document.querySelector('#warning'),
       feedback: document.querySelector('#pickup-feedback'),
       gameOver: document.querySelector('#game-over'),
@@ -118,11 +128,21 @@ export class HUD {
 
     if (!this.player.heldItem) {
       this.elements.held.textContent = 'None';
+      this.elements.throwChargeUI.classList.remove('visible');
+      this.elements.throwChargeFill.style.width = '0%';
       return;
     }
 
-    const chargePercent = Math.round((this.player.throwCharge / this.player.maxThrowCharge) * 100);
+    const chargePercent = Math.round(
+      (this.player.throwCharge / this.player.maxThrowCharge) * 100
+    );
+
     this.elements.held.textContent = `${this.player.heldItem.label} · Throw ${chargePercent}%`;
+
+    const isCharging = this.player.throwCharge > 0.03;
+
+    this.elements.throwChargeUI.classList.toggle('visible', isCharging);
+    this.elements.throwChargeFill.style.width = `${chargePercent}%`;
   }
 
   update(delta, scannerCooldown) {
