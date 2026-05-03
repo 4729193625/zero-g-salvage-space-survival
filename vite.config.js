@@ -1,8 +1,9 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite';
 
+// Vite config MUST export an object. This avoids the "config must export or return an object" error.
 export default defineConfig({
   server: {
-    port: 5173,
-    open: true
+    host: '0.0.0.0',
+    port: 5173
   }
-})
+});
