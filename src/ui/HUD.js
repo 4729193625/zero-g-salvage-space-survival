@@ -53,7 +53,7 @@ export class HUD {
         <strong>Controls</strong><br />
         Click: mouse lock · Mouse: look<br />
         WASD: horizontal/forward thrust<br />
-        Shift: up · Ctrl: down · Alt: boost<br />
+        E: up · Q: down · Alt: boost<br />
         Space/Left Click: extinguisher backward thrust<br />
         E: grab/drop · Hold/Release Left Click: throw<br />
         C: consume held resource · F: flashlight<br />

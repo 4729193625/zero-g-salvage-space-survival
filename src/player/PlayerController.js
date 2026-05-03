@@ -123,8 +123,10 @@ export class PlayerController {
     if (this.input.isDown('KeyA')) thrust.sub(right);
 
     // Added vertical zero-g thrust: Shift goes up, Ctrl goes down.
-    if (this.input.isDown('ShiftLeft') || this.input.isDown('ShiftRight')) thrust.add(up);
-    if (this.input.isDown('ControlLeft') || this.input.isDown('ControlRight')) thrust.sub(up);
+    // Vertical zero-g thrust: E goes up, Q goes down.
+    // Firstly we use Ctrl (down) and Shift (up) but i changed that because Ctrl + W closes the browser tab.
+    if (this.input.isDown('KeyE')) thrust.add(up);
+    if (this.input.isDown('KeyQ')) thrust.sub(up);
 
     if (thrust.lengthSq() > 0) {
       thrust.normalize();

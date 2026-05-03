@@ -10,8 +10,15 @@ export class Input {
     this.pointerLocked = false;
 
     const preventGameplayDefaults = new Set([
-      'Space', 'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight',
-      'AltLeft', 'AltRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'
+        'Space',
+        'AltLeft',
+        'AltRight',
+        'KeyW',
+        'KeyA',
+        'KeyS',
+        'KeyD',
+        'KeyQ',
+        'KeyE'
     ]);
 
     window.addEventListener('keydown', (event) => {
