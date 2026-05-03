@@ -12,10 +12,11 @@ export const ITEM_TYPES = {
 };
 
 export const RESOURCE_VALUES = {
-  food: { hunger: 35 },
-  water: { thirst: 35 },
-  oxygen: { oxygen: 45 },
-  extinguisher: { fuel: 45 }
+  food: { hunger: 26 },
+  water: { thirst: 26 },
+  oxygen: { oxygen: 32 },
+  extinguisher: { fuel: 34 },
+  crate: { hunger: 12, thirst: 12, oxygen: 14, fuel: 10 }
 };
 
 export const SCANNER_COLORS = {
@@ -27,3 +28,5 @@ export const SCANNER_COLORS = {
   debris: 0xbbbbbb,
   base: 0xffffff
 };
+
+export const RESOURCE_BARS = ['oxygen', 'thirst', 'hunger', 'fuel'];

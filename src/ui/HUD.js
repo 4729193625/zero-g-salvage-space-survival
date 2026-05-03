@@ -13,8 +13,10 @@ function barHTML(id, label) {
 }
 
 export class HUD {
-  constructor(gameState) {
+  constructor(gameState, onRestart) {
     this.gameState = gameState;
+    this.onRestart = onRestart;
+    this.player = null;
 
     this.root = document.createElement('div');
     this.root.id = 'hud';
@@ -28,8 +30,11 @@ export class HUD {
         <div class="hud-stat"><span>Survival Time</span><strong id="timer">00:00</strong></div>
         <div class="hud-stat"><span>Score</span><strong id="score">0</strong></div>
         <div class="hud-stat"><span>Stored Items</span><strong id="stored">0</strong></div>
+        <div class="hud-stat wide"><span>Inventory</span><strong id="inventory">F:0 W:0 O₂:0 Ext:0 Cr:0</strong></div>
         <div class="hud-stat"><span>Scanner</span><strong id="scanner">READY</strong></div>
         <div class="hud-stat"><span>Nearest Supply</span><strong id="nearest">--</strong></div>
+        <div class="hud-stat"><span>Velocity</span><strong id="velocity">0.0 m/s</strong></div>
+        <div class="hud-stat wide"><span>Held</span><strong id="held">None</strong></div>
       </div>
 
       <div id="crosshair">+</div>
@@ -39,15 +44,20 @@ export class HUD {
       <div class="hud-panel hud-help">
         <strong>Controls</strong><br />
         Click: mouse lock · Mouse: look<br />
-        WASD: drift thrust · Space/Left Click: extinguisher<br />
+        WASD: horizontal/forward thrust<br />
+        Shift: up · Ctrl: down · Alt: boost<br />
+        Space/Left Click: extinguisher backward thrust<br />
         E: grab/drop · Hold/Release Left Click: throw<br />
-        C: consume held resource · F: flashlight · R: scanner
+        C: consume held resource · F: flashlight<br />
+        R: scanner ping · G: settings panel
       </div>
 
       <div id="game-over" class="hidden">
-        <h2>MISSION FAILED</h2>
-        <p id="game-over-reason"></p>
-        <p>Refresh the page to restart.</p>
+        <div class="game-over-card">
+          <h2>MISSION FAILED</h2>
+          <p id="game-over-reason"></p>
+          <button id="restart-button" type="button">Restart Mission</button>
+        </div>
       </div>
     `;
 
@@ -65,15 +75,27 @@ export class HUD {
       timer: document.querySelector('#timer'),
       score: document.querySelector('#score'),
       stored: document.querySelector('#stored'),
+      inventory: document.querySelector('#inventory'),
       scanner: document.querySelector('#scanner'),
       nearest: document.querySelector('#nearest'),
+      velocity: document.querySelector('#velocity'),
+      held: document.querySelector('#held'),
       warning: document.querySelector('#warning'),
       feedback: document.querySelector('#pickup-feedback'),
       gameOver: document.querySelector('#game-over'),
-      gameOverReason: document.querySelector('#game-over-reason')
+      gameOverReason: document.querySelector('#game-over-reason'),
+      restartButton: document.querySelector('#restart-button')
     };
 
+    this.elements.restartButton.addEventListener('click', () => {
+      this.onRestart?.();
+    });
+
     this.feedbackTimer = 0;
+  }
+
+  setPlayer(player) {
+    this.player = player;
   }
 
   setBar(element, valueElement, value) {
@@ -85,7 +107,22 @@ export class HUD {
   showFeedback(message) {
     this.elements.feedback.textContent = message;
     this.elements.feedback.classList.add('visible');
-    this.feedbackTimer = 1.4;
+    this.feedbackTimer = 1.7;
+  }
+
+  updatePlayerReadouts() {
+    if (!this.player) return;
+
+    const speed = this.player.body.velocity.length();
+    this.elements.velocity.textContent = `${speed.toFixed(1)} m/s`;
+
+    if (!this.player.heldItem) {
+      this.elements.held.textContent = 'None';
+      return;
+    }
+
+    const chargePercent = Math.round((this.player.throwCharge / this.player.maxThrowCharge) * 100);
+    this.elements.held.textContent = `${this.player.heldItem.label} · Throw ${chargePercent}%`;
   }
 
   update(delta, scannerCooldown) {
@@ -99,10 +136,13 @@ export class HUD {
     this.elements.timer.textContent = formatTime(state.time);
     this.elements.score.textContent = state.score;
     this.elements.stored.textContent = state.stored;
+    this.elements.inventory.textContent = state.getInventoryText();
     this.elements.scanner.textContent = scannerCooldown <= 0 ? 'READY' : `${scannerCooldown.toFixed(1)}s`;
     this.elements.nearest.textContent = state.nearestSupplyDistance == null
       ? '--'
       : `${state.nearestSupplyDistance.toFixed(1)}m`;
+
+    this.updatePlayerReadouts();
 
     this.elements.warning.textContent = state.warning;
     this.elements.warning.classList.toggle('visible', Boolean(state.warning));
@@ -118,6 +158,8 @@ export class HUD {
     if (state.gameOver) {
       this.elements.gameOver.classList.remove('hidden');
       this.elements.gameOverReason.textContent = `${state.gameOverReason} · Final time: ${formatTime(state.time)} · Score: ${state.score}`;
+    } else {
+      this.elements.gameOver.classList.add('hidden');
     }
   }
 }

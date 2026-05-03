@@ -7,5 +7,8 @@ export class SurvivalSystem {
   update(delta) {
     this.gameState.updateTimer(delta);
     this.gameState.drain(delta, this.settings);
+    const autoUseMessage = this.gameState.autoUseCriticalResources(this.settings);
+    this.gameState.checkFailure();
+    return autoUseMessage;
   }
 }

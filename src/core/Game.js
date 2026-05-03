@@ -24,9 +24,11 @@ export class Game {
     this.container = container;
     this.clock = new THREE.Clock();
     this.accumulator = 0;
+    this.wasGameOver = false;
 
-    const { settings } = createSettings();
+    const { settings, toggleGui } = createSettings();
     this.settings = settings;
+    this.toggleGui = toggleGui;
 
     this.gameState = new GameState();
     this.world = createPhysicsWorld();
@@ -42,10 +44,12 @@ export class Game {
     this.storageZone = createStorageZone(scene);
 
     this.input = new Input(renderer.domElement);
-    this.hud = new HUD(this.gameState);
     this.particles = new ParticleSystem(scene);
     this.player = new PlayerController(camera, this.world, this.input, this.gameState, settings, this.particles);
     this.flashlight = new FlashlightController(scene, camera, settings);
+    this.hud = new HUD(this.gameState, () => this.restart());
+    this.hud.setPlayer(this.player);
+
     this.itemManager = new ItemManager(scene, this.world, this.gameState, settings);
     this.itemManager.spawnInitialItems();
 
@@ -59,7 +63,23 @@ export class Game {
     this.renderer.setAnimationLoop(() => this.update());
   }
 
+  restart() {
+    this.gameState.restart();
+    this.player.reset();
+    this.itemManager.reset();
+    this.scanner.reset();
+    this.accumulator = 0;
+    this.clock.getDelta();
+    this.wasGameOver = false;
+    this.hud.showFeedback('Mission restarted');
+  }
+
   handleInteractions() {
+    if (this.input.wasPressed('KeyG')) {
+      const visible = this.toggleGui();
+      this.hud.showFeedback(visible ? 'Settings panel opened' : 'Settings panel hidden');
+    }
+
     if (this.gameState.gameOver) return;
 
     if (this.input.wasPressed('KeyF')) {
@@ -70,6 +90,7 @@ export class Game {
     if (this.input.wasPressed('KeyR')) {
       const didPing = this.scanner.tryPing(this.camera.position);
       if (didPing) this.hud.showFeedback('Scanner ping sent');
+      else this.hud.showFeedback('Scanner cooling down');
     }
 
     if (this.input.wasPressed('KeyE')) {
@@ -103,18 +124,29 @@ export class Game {
     this.world.step(FIXED_TIME_STEP, delta, 3);
   }
 
+  updateGameOverState() {
+    if (this.gameState.gameOver && !this.wasGameOver) {
+      this.input.unlockPointer();
+      this.wasGameOver = true;
+    }
+  }
+
   update() {
     const delta = Math.min(this.clock.getDelta(), MAX_DELTA);
 
     this.handleInteractions();
     this.player.update(delta);
     this.flashlight.update();
-    this.survival.update(delta);
+
+    const autoUseMessage = this.survival.update(delta);
+    if (autoUseMessage) this.hud.showFeedback(autoUseMessage);
+
     this.boundary.update(this.camera.position);
     this.itemManager.update(delta, this.camera.position);
     this.storage.update();
     this.scanner.update(delta);
     this.particles.update(delta);
+    this.updateGameOverState();
 
     this.accumulator += delta;
     while (this.accumulator >= FIXED_TIME_STEP) {

@@ -1,26 +1,36 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { ITEM_TYPES, RESOURCE_VALUES } from '../utils/constants.js';
+import { ITEM_TYPES } from '../utils/constants.js';
 import { randomBetween, randomVectorInShell } from '../utils/random.js';
 import { createBoxBody, createCylinderBody, createSphereBody } from '../physics/createBodies.js';
 import { syncMeshToBody, applySelfFriction } from '../physics/syncPhysics.js';
-import { ITEM_DEFINITIONS } from './itemTypes.js';
+import { ITEM_DEFINITIONS, buildItemDefinition, getVariantKey } from './itemTypes.js';
 import { createItemMesh } from './createItems.js';
 
 function createBodyForType(type, definition, position) {
+  const s = definition.scale ?? 1;
+
   if (type === ITEM_TYPES.FOOD) {
-    return createBoxBody({ size: new THREE.Vector3(0.9, 0.55, 0.25), mass: definition.mass, position });
+    return createBoxBody({ size: new THREE.Vector3(0.9 * s, 0.55 * s, 0.25 * s), mass: definition.mass, position });
   }
 
   if ([ITEM_TYPES.WATER, ITEM_TYPES.OXYGEN, ITEM_TYPES.EXTINGUISHER].includes(type)) {
-    return createCylinderBody({ radiusTop: 0.32, radiusBottom: 0.32, height: 1.1, mass: definition.mass, position });
+    return createCylinderBody({ radiusTop: 0.32 * s, radiusBottom: 0.32 * s, height: 1.15 * s, mass: definition.mass, position });
   }
 
   if (type === ITEM_TYPES.CRATE) {
-    return createBoxBody({ size: new THREE.Vector3(1.2, 1.2, 1.2), mass: definition.mass, position });
+    return createBoxBody({ size: new THREE.Vector3(1.2 * s, 1.2 * s, 1.2 * s), mass: definition.mass, position });
   }
 
-  return createSphereBody({ radius: 0.65, mass: definition.mass, position });
+  return createSphereBody({ radius: 0.65 * s, mass: definition.mass, position });
+}
+
+function setMeshEmissive(mesh, color, intensity) {
+  mesh.traverse((child) => {
+    if (!child.isMesh || !child.material?.emissive) return;
+    child.material.emissive.setHex(color);
+    child.material.emissiveIntensity = intensity;
+  });
 }
 
 export class ItemManager {
@@ -35,13 +45,13 @@ export class ItemManager {
   spawnInitialItems() {
     Object.entries(ITEM_DEFINITIONS).forEach(([type, definition]) => {
       for (let i = 0; i < definition.count; i += 1) {
-        this.spawnItem(type);
+        this.spawnItem(type, getVariantKey(i));
       }
     });
   }
 
-  spawnItem(type) {
-    const definition = ITEM_DEFINITIONS[type];
+  spawnItem(type, variantKey = 'medium') {
+    const definition = buildItemDefinition(type, variantKey);
     const position = randomVectorInShell(14, 42);
     position.y += randomBetween(-7, 7);
 
@@ -58,14 +68,20 @@ export class ItemManager {
     const item = {
       id: crypto.randomUUID?.() ?? `${type}-${Date.now()}-${Math.random()}`,
       type,
+      variantKey,
+      variantLabel: definition.variantLabel,
       label: definition.label,
       useful: definition.useful,
+      values: definition.values,
+      scoreValue: definition.scoreValue,
       mesh,
       body,
       held: false,
       stored: false,
       consumed: false,
-      scanTimer: 0
+      scanTimer: 0,
+      originalEmissive: definition.emissive,
+      originalEmissiveIntensity: 0.25
     };
 
     mesh.userData.item = item;
@@ -77,6 +93,16 @@ export class ItemManager {
     this.scene.remove(item.mesh);
     this.world.removeBody(item.body);
     this.items = this.items.filter((candidate) => candidate !== item);
+  }
+
+  clearItems() {
+    this.items.slice().forEach((item) => this.removeItem(item));
+    this.items = [];
+  }
+
+  reset() {
+    this.clearItems();
+    this.spawnInitialItems();
   }
 
   findNearestItem(position, maxDistance = 3.2) {
@@ -105,9 +131,8 @@ export class ItemManager {
   }
 
   consumeItem(item) {
-    const values = RESOURCE_VALUES[item.type];
-    if (!values) return false;
-    this.gameState.restore(values);
+    if (!item.values) return false;
+    this.gameState.restore(item.values);
     item.consumed = true;
     this.removeItem(item);
     return true;
@@ -119,7 +144,7 @@ export class ItemManager {
     this.items.forEach((item) => {
       if (!item.held) {
         if (this.settings.selfFriction) {
-          applySelfFriction(item.body, this.settings.selfFrictionStrength);
+          applySelfFriction(item.body, this.settings.selfFrictionStrength, delta);
         }
         syncMeshToBody(item.mesh, item.body);
       }
@@ -127,10 +152,13 @@ export class ItemManager {
       if (item.scanTimer > 0) {
         item.scanTimer -= delta;
         if (item.scanTimer <= 0) {
-          item.mesh.material.emissive.setHex(item.mesh.userData.originalEmissive);
-          item.mesh.material.emissiveIntensity = item.mesh.userData.originalEmissiveIntensity;
+          setMeshEmissive(item.mesh, item.originalEmissive, item.originalEmissiveIntensity);
         }
       }
     });
+  }
+
+  highlightItem(item, color, intensity = 2.4) {
+    setMeshEmissive(item.mesh, color, intensity);
   }
 }

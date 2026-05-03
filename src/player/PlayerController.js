@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { PLAYER_START } from '../utils/constants.js';
 import { cameraForward, cameraRight } from '../utils/math.js';
+import { applySelfFriction } from '../physics/syncPhysics.js';
 
 export class PlayerController {
   constructor(camera, world, input, gameState, settings, particleSystem) {
@@ -33,6 +34,7 @@ export class PlayerController {
     this.body.position.set(PLAYER_START.x, PLAYER_START.y, PLAYER_START.z);
     this.body.velocity.set(0, 0, 0);
     this.body.angularVelocity.set(0, 0, 0);
+    this.camera.position.set(PLAYER_START.x, PLAYER_START.y, PLAYER_START.z);
     this.pitch = 0;
     this.yaw = Math.PI;
     this.heldItem = null;
@@ -72,7 +74,7 @@ export class PlayerController {
       this.camera.position.z + forward.z * 2.2
     );
 
-    // Because cannon-es impulse depends on mass, heavy items naturally move slower.
+    // cannon-es impulse uses mass, so heavy/large items accelerate less than small items.
     item.body.applyImpulse(
       new CANNON.Vec3(forward.x * force, forward.y * force, forward.z * force),
       item.body.position
@@ -119,12 +121,14 @@ export class PlayerController {
     if (this.input.isDown('KeyS')) thrust.sub(forward);
     if (this.input.isDown('KeyD')) thrust.add(right);
     if (this.input.isDown('KeyA')) thrust.sub(right);
-    if (this.input.isDown('KeyQ')) thrust.sub(up);
-    if (this.input.isDown('KeyZ')) thrust.add(up);
+
+    // Added vertical zero-g thrust: Shift goes up, Ctrl goes down.
+    if (this.input.isDown('ShiftLeft') || this.input.isDown('ShiftRight')) thrust.add(up);
+    if (this.input.isDown('ControlLeft') || this.input.isDown('ControlRight')) thrust.sub(up);
 
     if (thrust.lengthSq() > 0) {
       thrust.normalize();
-      const boost = this.input.isDown('ShiftLeft') || this.input.isDown('ShiftRight')
+      const boost = this.input.isDown('AltLeft') || this.input.isDown('AltRight')
         ? this.settings.boostMultiplier
         : 0.8;
       this.applyThrust(thrust, delta, boost);
@@ -156,10 +160,16 @@ export class PlayerController {
     }
   }
 
+  updatePlayerSelfFriction(delta) {
+    if (!this.settings.playerSelfFriction || this.gameState.gameOver) return;
+    applySelfFriction(this.body, this.settings.playerSelfFrictionStrength, delta);
+  }
+
   update(delta) {
     this.updateLook();
     this.updateMovement(delta);
     this.updateHeldItem(delta);
+    this.updatePlayerSelfFriction(delta);
 
     this.camera.position.copy(this.body.position);
   }

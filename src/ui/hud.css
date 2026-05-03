@@ -32,7 +32,7 @@ canvas {
 .hud-left {
   top: 18px;
   left: 18px;
-  width: 300px;
+  width: 330px;
   padding: 16px;
 }
 
@@ -75,18 +75,24 @@ canvas {
 .hud-stat {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   margin-top: 9px;
   font-size: 13px;
 }
 
+.hud-stat.wide {
+  align-items: flex-start;
+}
+
 .hud-stat strong {
   color: #ffffff;
+  text-align: right;
 }
 
 .hud-help {
   right: 18px;
   bottom: 18px;
-  width: 340px;
+  width: 380px;
   padding: 14px;
   font-size: 12px;
   line-height: 1.55;
@@ -148,7 +154,17 @@ canvas {
   display: grid;
   place-content: center;
   text-align: center;
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(0, 0, 0, 0.76);
+  pointer-events: auto;
+}
+
+.game-over-card {
+  width: min(560px, calc(100vw - 40px));
+  padding: 34px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 110, 110, 0.55);
+  background: rgba(9, 12, 24, 0.92);
+  box-shadow: 0 0 55px rgba(255, 0, 0, 0.18);
 }
 
 #game-over h2 {
@@ -161,6 +177,23 @@ canvas {
 #game-over p {
   font-size: 18px;
   color: #ffffff;
+}
+
+#restart-button {
+  pointer-events: auto;
+  cursor: pointer;
+  margin-top: 16px;
+  padding: 12px 22px;
+  border: 1px solid rgba(157, 247, 255, 0.8);
+  border-radius: 999px;
+  background: rgba(80, 210, 255, 0.16);
+  color: #e8f7ff;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+#restart-button:hover {
+  background: rgba(80, 210, 255, 0.3);
 }
 
 .hidden {

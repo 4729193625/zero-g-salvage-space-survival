@@ -72,14 +72,24 @@ export function createEnvironment(scene) {
   });
   scene.add(moon);
 
-  const sun = createPlanet({
-    radius: 8,
-    position: new THREE.Vector3(-80, 45, -90),
-    color: 0xffd27a,
-    emissive: 0xffb347,
-    roughness: 0.2
-  });
+  const sun = new THREE.Mesh(
+    new THREE.SphereGeometry(8, 48, 32),
+    new THREE.MeshBasicMaterial({ color: 0xffcf6a })
+  );
+  sun.position.set(-80, 45, -90);
   scene.add(sun);
 
-  return { stars, earth, moon, sun };
+  const sunGlow = new THREE.Mesh(
+    new THREE.SphereGeometry(13.5, 48, 32),
+    new THREE.MeshBasicMaterial({
+      color: 0xffb347,
+      transparent: true,
+      opacity: 0.18,
+      side: THREE.BackSide
+    })
+  );
+  sunGlow.position.copy(sun.position);
+  scene.add(sunGlow);
+
+  return { stars, earth, moon, sun, sunGlow };
 }

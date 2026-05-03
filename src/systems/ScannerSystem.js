@@ -10,6 +10,12 @@ export class ScannerSystem {
     this.baseGlowTimer = 0;
   }
 
+  reset() {
+    this.cooldown = 0;
+    this.baseGlowTimer = 0;
+    this.storageZone.mesh.material.opacity = 0.16;
+  }
+
   tryPing(playerPosition) {
     if (this.cooldown > 0 || this.gameState.gameOver) return false;
 
@@ -21,12 +27,11 @@ export class ScannerSystem {
       if (distance > range) return;
 
       item.scanTimer = this.settings.scannerGlowTime;
-      item.mesh.material.emissive.setHex(SCANNER_COLORS[item.type] ?? 0xffffff);
-      item.mesh.material.emissiveIntensity = 2.4;
+      this.itemManager.highlightItem(item, SCANNER_COLORS[item.type] ?? 0xffffff, 2.7);
     });
 
     this.baseGlowTimer = this.settings.scannerGlowTime;
-    this.storageZone.mesh.material.opacity = 0.35;
+    this.storageZone.mesh.material.opacity = 0.38;
     return true;
   }
 

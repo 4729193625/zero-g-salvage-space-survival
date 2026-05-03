@@ -21,7 +21,7 @@ export class StorageSystem {
       if (!this.isInsideStorageZone(item)) return;
 
       item.stored = true;
-      this.gameState.addStoredItem();
+      this.gameState.storeItem(item);
       this.itemManager.removeItem(item);
     });
   }

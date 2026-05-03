@@ -9,12 +9,19 @@ export class Input {
     this.mouseJustUp = false;
     this.pointerLocked = false;
 
+    const preventGameplayDefaults = new Set([
+      'Space', 'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight',
+      'AltLeft', 'AltRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'
+    ]);
+
     window.addEventListener('keydown', (event) => {
+      if (preventGameplayDefaults.has(event.code)) event.preventDefault();
       if (!this.keys.has(event.code)) this.justPressed.add(event.code);
       this.keys.add(event.code);
     });
 
     window.addEventListener('keyup', (event) => {
+      if (preventGameplayDefaults.has(event.code)) event.preventDefault();
       this.keys.delete(event.code);
     });
 
@@ -46,6 +53,12 @@ export class Input {
 
   wasPressed(code) {
     return this.justPressed.has(code);
+  }
+
+  unlockPointer() {
+    if (document.pointerLockElement === this.domElement) {
+      document.exitPointerLock();
+    }
   }
 
   endFrame() {
